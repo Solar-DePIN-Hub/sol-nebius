@@ -13,7 +13,7 @@ import { providerChain, hasLlmKey, cleanText } from "./llm-provider.js";
 const MODELS = ["gpt-4.1-mini", "gpt-4o-mini"];
 export const ACTION_TYPES = ["payment", "callback", "reminder", "owed"];
 export const PAY_TOKENS = ["SOL", "USDC", "SKR"];
-/** Fiat currencies an "owed" card may carry (PayPal invoices); UAH is shown but PayPal invoices it in USD after the user confirms. */
+/** Fiat currencies an "owed" card may carry ; UAH is shown as-is and never converted silently. */
 export const FIATS = ["USD", "EUR", "UAH"];
 /** The single fiat currency named in a card's own text/quote (used when the model left 'token' empty). */
 export function fiatIn(text) {
@@ -320,7 +320,7 @@ export function sanitizeActions(raw, calls, lang = "", opts = {}) {
       const tokenWord = clip(a.token, 12).toUpperCase();
       const token = PAY_TOKENS.includes(tokenWord) ? tokenWord : /^\$?SKR$|^SEEKER TOKENS?$/i.test(tokenWord) ? "SKR" : opts.fiat ? fiatOf(tokenWord) || (tokenWord ? "" : fiatIn(a.text + " " + a.quote)) : "";
       if (!Number.isFinite(amount) || amount <= 0 || amount > 1e9 || !token) continue;
-      // PayPal (hackathon): a suggested USD amount the user must confirm before any invoice; never converted for volatile tokens.
+      // A suggested USD amount the user must confirm; never converted for volatile tokens.
       const usdSuggested = token === "USD" || token === "USDC" ? amount : 0;
       out.push({ callId: a.callId, type: "owed", amount, token, tokenWord, fiat: FIATS.includes(token), usdSuggested, recipient: "", address: "", number: "", when: "", day: "", date: "", text, quote });
       perCall.set(a.callId, n);
